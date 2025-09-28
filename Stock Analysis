@@ -1,0 +1,130 @@
+# -----------------------------
+# Question 1 - Tesla Stock Data
+# -----------------------------
+import yfinance as yf
+import pandas as pd
+import requests
+from bs4 import BeautifulSoup
+import matplotlib.pyplot as plt
+
+# Create Tesla ticker object
+tesla = yf.Ticker("TSLA")
+
+# Get historical stock data
+tesla_data = tesla.history(period="max")
+
+# Reset index
+tesla_data.reset_index(inplace=True)
+
+# Display first 5 rows
+print("Tesla Stock Data (head):")
+print(tesla_data.head())
+# ---------------------------------------
+# Question 2 - Tesla Revenue Webscraping
+# ---------------------------------------
+
+# Download the webpage
+url_tesla = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-PY0220EN-SkillsNetwork/labs/project/revenue.htm"
+html_data = requests.get(url_tesla).text
+
+# Parse HTML with BeautifulSoup
+soup = BeautifulSoup(html_data, "html.parser")
+
+# Extract all tables
+tables = pd.read_html(html_data)
+
+# Tesla revenue is usually the second table
+tesla_revenue = tables[1]
+
+# Clean column names
+tesla_revenue.columns = ["Date", "Revenue"]
+
+# Drop NaN and clean Revenue column
+tesla_revenue.dropna(inplace=True)
+tesla_revenue["Revenue"] = tesla_revenue["Revenue"].str.replace(r"[\$,]", "", regex=True)
+tesla_revenue = tesla_revenue[tesla_revenue["Revenue"] != ""]
+
+print("Tesla Revenue Data (tail):")
+print(tesla_revenue.tail())
+# -------------------------------
+# Question 3 - GameStop Stock Data
+# -------------------------------
+
+# Create GameStop ticker object
+gme = yf.Ticker("GME")
+
+# Get historical stock data
+gme_data = gme.history(period="max")
+
+# Reset index
+gme_data.reset_index(inplace=True)
+
+# Display first 5 rows
+print("GameStop Stock Data (head):")
+print(gme_data.head())
+# ----------------------------------------
+# Question 4 - GameStop Revenue Webscraping
+# ----------------------------------------
+import requests
+import pandas as pd
+from io import StringIO
+
+url_gme = "https://cf-courses-data.s3.us.cloud-object-storage.appdomain.cloud/IBMDeveloperSkillsNetwork-PY0220EN-SkillsNetwork/labs/project/revenue.htm"
+html_data_gme = requests.get(url_gme).text
+
+# Extract all tables (use StringIO to avoid FutureWarning)
+tables_gme = pd.read_html(StringIO(html_data_gme))
+
+# Pick the correct GameStop revenue table (Table 1)
+gme_revenue = tables_gme[1]
+
+# Rename columns
+gme_revenue.columns = ["Date", "Revenue"]
+
+# Clean data
+gme_revenue.dropna(inplace=True)
+gme_revenue["Revenue"] = gme_revenue["Revenue"].str.replace(r"[\$,]", "", regex=True)
+gme_revenue = gme_revenue[gme_revenue["Revenue"] != ""]
+
+print("GameStop Revenue Data (tail):")
+print(gme_revenue.tail())
+# -------------------------------
+# Question 5 - Tesla Dashboard
+# -------------------------------
+
+def make_graph(stock_data, revenue_data, title):
+    # Ensure Date columns are datetime
+    stock_data = stock_data.copy()
+    revenue_data = revenue_data.copy()
+    
+    stock_data["Date"] = pd.to_datetime(stock_data["Date"], errors="coerce")
+    revenue_data["Date"] = pd.to_datetime(revenue_data["Date"], errors="coerce")
+    
+    # Drop rows with invalid dates
+    stock_data.dropna(subset=["Date"], inplace=True)
+    revenue_data.dropna(subset=["Date"], inplace=True)
+
+    # Convert Revenue to numeric
+    revenue_data["Revenue"] = pd.to_numeric(revenue_data["Revenue"], errors="coerce")
+    revenue_data.dropna(subset=["Revenue"], inplace=True)
+
+    # Plot
+    fig, ax1 = plt.subplots(figsize=(14, 6))
+
+    ax1.plot(stock_data["Date"], stock_data["Close"], color="blue", label="Stock Price")
+    ax1.set_xlabel("Date")
+    ax1.set_ylabel("Stock Price (USD)", color="blue")
+    ax1.tick_params(axis="y", labelcolor="blue")
+
+    ax2 = ax1.twinx()
+    ax2.plot(revenue_data["Date"], revenue_data["Revenue"], color="green", label="Revenue")
+    ax2.set_ylabel("Revenue (USD Millions)", color="green")
+    ax2.tick_params(axis="y", labelcolor="green")
+
+    plt.title(title)
+    fig.tight_layout()
+    plt.show()
+# -------------------------------
+# Question 6 - GameStop Dashboard
+# -------------------------------
+make_graph(gme_data, gme_revenue, "GameStop Stock Price and Revenue")
